@@ -1,3 +1,4 @@
+"use client"
 import * as React from "react"
 import {
   Sidebar,
@@ -12,25 +13,27 @@ import {
   SidebarRail,
 
 } from "@/components/ui/sidebar"
+
+
 const data = {
   versions: ["Traffic Turbine"],
   navMain: [
     {
-      title: "Dashboard",
+      title: "Device Cluster",
       url: "#",
       items: [
         {
-          title: "Installation",
-          url: "#",
+          title: "Device A", // <-- fix here
+          url: "/dashboard/device/device-a",
         },
         {
-          title: "Project Structure",
-          url: "#",
+          title: "Device B", // <-- fix here
+          url: "/dashboard/device/device-b",
         }
       ]
     }
   ]
-}
+}// for now
 
 export function AppSidebar({
   ...props

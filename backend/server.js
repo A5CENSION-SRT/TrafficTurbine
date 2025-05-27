@@ -24,13 +24,13 @@ app.get("/",(req,res) =>{
 });
 
 app.post("/api/data", async (req, res) => {
-    const { voltage, current } = req.body;  
+    const { voltage, current , time , deviceId} = req.body;  
 
     if (voltage < 0 || current < 0) {
         return res.status(400).json({error: "Voltage and current must be non-negative."});
     }
     try{
-        const newData = new EnergyData({voltage, current});
+        const newData = new EnergyData({voltage, current, time, deviceId});
         await newData.save();
         res.status(201).json({message: "Energy data saved successfully", data: newData});
     }

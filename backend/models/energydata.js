@@ -13,7 +13,12 @@ const energyDataSchema = new mongoose.Schema({
     time:{
         type:Date,
         default:Date.now
+    },
+    deviceId:{ 
+        type: Number,
+        required: true
     }
+
 })
 
 const EnergyData =  mongoose.model('energy',energyDataSchema)
