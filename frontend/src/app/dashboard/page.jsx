@@ -1,3 +1,4 @@
+"use client"
 import React, {useEffect, useState} from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import {
@@ -18,7 +19,7 @@ import {
 
 export default function Page() {
     const [energyData,setEnergyData] =useState([]);
-    
+
     useEffect(() =>{
       fetch("http://localhost:5000/api/data")
       .then((res) => res.json())
@@ -41,7 +42,7 @@ export default function Page() {
               </BreadcrumbItem>
               <BreadcrumbSeparator className="hidden md:block" />
               <BreadcrumbItem>
-               
+
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
