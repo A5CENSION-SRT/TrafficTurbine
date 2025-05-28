@@ -24,13 +24,13 @@ app.get("/",(req,res) =>{
 });
 
 app.post("/api/data", async (req, res) => {
-    const { voltage, current , time , deviceId} = req.body;  
+    const { voltage, current ,power, energy , time , deviceId} = req.body;  
 
     if (voltage < 0 || current < 0) {
         return res.status(400).json({error: "Voltage and current must be non-negative."});
     }
     try{
-        const newData = new EnergyData({voltage, current, time, deviceId});
+        const newData = new EnergyData( { voltage, current ,power, energy , time , deviceId});
         await newData.save();
         res.status(201).json({message: "Energy data saved successfully", data: newData});
     }
@@ -39,12 +39,20 @@ app.post("/api/data", async (req, res) => {
     }
 }); // endpoint to save energy data
 
-app.get("/api/data", async(req,res) =>{
-    try{
-        const data = await EnergyData.find();
+app.get("/api/data", async (req, res) => {
+    try {
+        const { deviceId, startTime, endTime } = req.query;
+        const filter = {};
+        if (deviceId) filter.deviceId = deviceId;
+        if (startTime || endTime) {
+            filter.time = {};
+            if (startTime) filter.time.$gte = new Date(startTime);
+            if (endTime) filter.time.$lte = new Date(endTime);
+        }
+        const data = await EnergyData.find(filter);
         res.status(200).json(data);
-    }
-    catch (err){
+    } catch (err) {
         res.status(500).json({ error: "Failed to fetch data" });
     }
-}); // endpoint to retrieve all energy data
+}); // endpoint to retrieve all energy data, with optional filtering
+

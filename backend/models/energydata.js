@@ -14,6 +14,16 @@ const energyDataSchema = new mongoose.Schema({
         type:Date,
         default:Date.now
     },
+    power:{
+        type:Number,
+        required:true,
+        min:0
+    },
+    energy:{
+        type:Number,
+        required:true,
+        min:0
+    },
     deviceId:{ 
         type: Number,
         required: true
