@@ -1,4 +1,5 @@
-import { AppSidebar } from "@/components/app-sidebar"
+import React, {useEffect, useState} from "react";
+import { AppSidebar } from "@/components/app-sidebar";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -7,14 +8,23 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
+import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 
+
 export default function Page() {
+    const [energyData,setEnergyData] =useState([]);
+    
+    useEffect(() =>{
+      fetch("http://localhost:5000/api/data")
+      .then((res) => res.json())
+      .then((data) => setEnergyData(data))
+      .catch((err) =>console.error("Failed to fetch the data" ,err));
+    },[]);
   return (
     <SidebarProvider>
       <AppSidebar />
