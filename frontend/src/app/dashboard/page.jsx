@@ -23,7 +23,7 @@ export default function Page() {
     const [energyData,setEnergyData] =useState([]);
 
     useEffect(() =>{
-      fetch("http://localhost:5000/api/data")
+      fetch("http://localhost:5000/api/data") //temp
       .then((res) => res.json())
       .then((data) => setEnergyData(data))
       .catch((err) =>console.error("Failed to fetch the data" ,err));
