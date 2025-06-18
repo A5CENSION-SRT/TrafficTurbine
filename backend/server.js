@@ -2,7 +2,6 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
-import EnergyData from "./models/energydata.js";
 dotenv.config(); // intialize config 
 
 const app = express();
@@ -24,35 +23,38 @@ app.get("/",(req,res) =>{
 });
 
 app.post("/api/data", async (req, res) => {
-    const { voltage, current ,power, energy , time , deviceId} = req.body;  
+    const { voltage, current, power, energy, time, deviceId } = req.body;
 
     if (voltage < 0 || current < 0) {
-        return res.status(400).json({error: "Voltage and current must be non-negative."});
+        return res.status(400).json({ error: "Voltage and current must be non-negative." });
     }
-    try{
-        const newData = new EnergyData( { voltage, current ,power, energy , time , deviceId});
+
+    try {
+       
+        const deviceCollectionName = String(deviceId).trim();
+        if (!deviceCollectionName) {
+            return res.status(400).json({ error: "Invalid deviceId." });
+        }
+
+        const DeviceDataModel = mongoose.models[deviceCollectionName] || mongoose.model(
+            deviceCollectionName,
+            new mongoose.Schema({
+                voltage: { type: Number, required: true },
+                current: { type: Number, required: true },
+                power: { type: Number, required: true },
+                energy: { type: Number, required: true },
+                time: { type: Date, required: true, default: Date.now },
+            }),
+            deviceCollectionName
+        );
+
+        const newData = new DeviceDataModel({ voltage, current, power, energy, time: time || new Date() });
         await newData.save();
-        res.status(201).json({message: "Energy data saved successfully", data: newData});
-    }
-    catch (err){
-        res.status(500).json({error: "Failed to save energy data", details: err});
+
+        res.status(201).json({ message: "Energy data saved successfully", data: newData });
+    } catch (err) {
+        console.error("Error saving energy data:", err); // Log detailed error
+        res.status(500).json({ error: "Failed to save energy data", details: err.message });
     }
 }); // endpoint to save energy data
-
-app.get("/api/data", async (req, res) => {
-    try {
-        const { deviceId, startTime, endTime } = req.query;
-        const filter = {};
-        if (deviceId) filter.deviceId = deviceId;
-        if (startTime || endTime) {
-            filter.time = {};
-            if (startTime) filter.time.$gte = new Date(startTime);
-            if (endTime) filter.time.$lte = new Date(endTime);
-        }
-        const data = await EnergyData.find(filter);
-        res.status(200).json(data);
-    } catch (err) {
-        res.status(500).json({ error: "Failed to fetch data" });
-    }
-}); // endpoint to retrieve all energy data, with optional filtering
 
