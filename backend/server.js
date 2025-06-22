@@ -2,6 +2,7 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
+import deviceDataSchema from "./models/deviceDataSchema.js";
 dotenv.config(); // intialize config 
 
 const app = express();
@@ -38,13 +39,7 @@ app.post("/api/data", async (req, res) => {
 
         const DeviceDataModel = mongoose.models[deviceCollectionName] || mongoose.model(
             deviceCollectionName,
-            new mongoose.Schema({
-                voltage: { type: Number, required: true },
-                current: { type: Number, required: true },
-                power: { type: Number, required: true },
-                energy: { type: Number, required: true },
-                time: { type: Date, required: true, default: Date.now },
-            }),
+            deviceDataSchema,
             deviceCollectionName
         );
 
@@ -56,5 +51,23 @@ app.post("/api/data", async (req, res) => {
         console.error("Error saving energy data:", err); // Log detailed error
         res.status(500).json({ error: "Failed to save energy data", details: err.message });
     }
-}); // endpoint to save energy data
+}); // endpoint to save energy data based on the id 
+
+app.get("/api/data/:deviceId", async (req, res) => {
+    const { deviceId } = req.params; // Extract deviceId from the URL
+
+    try {
+        // Dynamically use the model for the device
+        const DeviceDataModel = mongoose.models[deviceId] || mongoose.model(
+            deviceId,
+            deviceDataSchema,
+            deviceId
+        );
+
+        const data = await DeviceDataModel.find();
+        res.status(200).json(data);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to fetch data", details: err.message });
+    }
+});
 
