@@ -65,6 +65,7 @@ app.get("/api/data/:deviceId", async (req, res) => {
         );
 
         const data = await DeviceDataModel.find();
+        console.log(`Fetched data for deviceId ${deviceId}:`, data); // Log data to terminal
         res.status(200).json(data);
     } catch (err) {
         res.status(500).json({ error: "Failed to fetch data", details: err.message });
