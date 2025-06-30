@@ -1,0 +1,26 @@
+// Minimal ESP32 Serial Test Code
+void setup() {
+  Serial.begin(115200); // Make sure Serial Monitor is set to 115200 baud
+  delay(1000); // Give time for Serial Monitor to connect
+  Serial.println("ESP32 Test Program Started.");
+}
+
+void loop() {
+  // Dummy sensor values for demonstration
+  float voltage = 3.3;
+  float current = 0.5;
+  float power = voltage * current;
+  float energy = power * 5; // Example: power over 5 seconds
+  int batteryLevel = 95;
+  unsigned long now = millis() / 1000;
+
+  Serial.print("Voltage: "); Serial.print(voltage, 2); Serial.println(" V");
+  Serial.print("Current: "); Serial.print(current, 2); Serial.println(" A");
+  Serial.print("Power: "); Serial.print(power, 2); Serial.println(" W");
+  Serial.print("Energy: "); Serial.print(energy, 2); Serial.println(" J");
+  Serial.print("Battery Level: "); Serial.print(batteryLevel); Serial.println("%");
+  Serial.print("Time: "); Serial.println(now);
+  Serial.println("-----------------------------");
+
+  delay(5000); // Wait 5 seconds before repeating
+}
