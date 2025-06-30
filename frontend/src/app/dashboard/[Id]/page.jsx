@@ -22,7 +22,7 @@ export default function Page() {
     const deviceIdStr = params?.Id;
     const deviceId = Number(deviceIdStr);
     console.log("deviceId:", deviceId);
-    fetch(`http://localhost:5000/api/data/${deviceId}`)
+    fetch(`https://trafficturbine.onrender.com/api/data/${deviceId}`)
       .then((res) => res.json())
       .then((data) => {
         setDeviceData(data)
