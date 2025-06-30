@@ -6,17 +6,34 @@ import deviceDataSchema from "./models/deviceDataSchema.js";
 dotenv.config(); // intialize config 
 
 const app = express();
-const PORT = process.env.PORT || 5000; //intialize app
+
+// Use environment variables for configuration
+const PORT = process.env.PORT || 5000;
+const DB_URI = process.env.MONGO_URI;
+
+// Use CORS with configurable origin
+const corsOptions = {
+  origin: process.env.CORS_ORIGIN || 'https://your-production-domain.com',
+};
+app.use(cors(corsOptions));
 
 app.use(express.json());
-app.use(cors());
 
-mongoose.connect(process.env.MONGO_URI)
-.then(() => console.log("MongoDB connected"))
-.catch(err => console.error("MongoDB connection error:", err)); // connect to MongoDB
+mongoose.connect(DB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('MongoDB connected'))
+  .catch((err) => {
+    console.error('MongoDB connection error:', err);
+    process.exit(1);
+  }); // connect to MongoDB
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send('Something broke!');
+});
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`); // start the server
+  console.log(`Server running on port ${PORT}`); // start the server
 });
 
 app.get("/",(req,res) =>{
