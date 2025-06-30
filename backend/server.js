@@ -11,11 +11,8 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const DB_URI = process.env.MONGO_URI;
 
-// Use CORS with configurable origin
-const corsOptions = {
-  origin: process.env.CORS_ORIGIN || 'https://your-production-domain.com',
-};
-app.use(cors(corsOptions));
+// Allow requests from any origin (for development or public API)
+app.use(cors());
 
 app.use(express.json());
 
@@ -88,4 +85,4 @@ app.get("/api/data/:deviceId", async (req, res) => {
         res.status(500).json({ error: "Failed to fetch data", details: err.message });
     }
 });
-
+        
