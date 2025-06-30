@@ -38,7 +38,7 @@ app.get("/",(req,res) =>{
 });
 
 app.post("/api/data", async (req, res) => {
-    const { voltage, current, power, energy, time, deviceId } = req.body;
+    const { voltage, current, power, energy, batteryLevel, time, deviceId } = req.body;
     try {
        
         const deviceCollectionName = String(deviceId).trim();
@@ -46,13 +46,14 @@ app.post("/api/data", async (req, res) => {
             return res.status(400).json({ error: "Invalid deviceId." });
         }
 
+
         const DeviceDataModel = mongoose.models[deviceCollectionName] || mongoose.model(
             deviceCollectionName,
             deviceDataSchema,
             deviceCollectionName
         );
 
-        const newData = new DeviceDataModel({ voltage, current, power, energy, time: time || new Date() });
+        const newData = new DeviceDataModel({ voltage, current, power, energy, batteryLevel, time: time || new Date() });
         await newData.save();
 
         res.status(201).json({ message: "Energy data saved successfully", data: newData });
@@ -80,4 +81,4 @@ app.get("/api/data/:deviceId", async (req, res) => {
         res.status(500).json({ error: "Failed to fetch data", details: err.message });
     }
 });
-        
+
