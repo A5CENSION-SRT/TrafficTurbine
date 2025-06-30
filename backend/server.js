@@ -39,11 +39,6 @@ app.get("/",(req,res) =>{
 
 app.post("/api/data", async (req, res) => {
     const { voltage, current, power, energy, time, deviceId } = req.body;
-
-    if (voltage < 0 || current < 0) {
-        return res.status(400).json({ error: "Voltage and current must be non-negative." });
-    }
-
     try {
        
         const deviceCollectionName = String(deviceId).trim();
