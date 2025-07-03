@@ -25,22 +25,20 @@ import {
 const clusterData = [
   {
     DeviceName: "ARD-1",
-    Url: "#",
+    Url: "/dashboard/1",
   },
   {
     DeviceName: "ARD-2",
-    Url: "#",
+    Url: "/dashboard/2",
   },
   {
     DeviceName: "ARD-3",
-    Url: "#",
+    Url: "/dashboard/3",
   },
   {
     DeviceName: "ARD-4",
-    Url: "#",
+    Url: "/dashboard/4",
   },
-  
-  
 ]
 
 
