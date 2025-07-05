@@ -1,66 +1,77 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
-#include <NTPClient.h>
-#include <WiFiUdp.h>
+#include <Wire.h>
+#include <Adafruit_INA219.h>
+#include <math.h>
 
-// --- WiFi Credentials ---
-const char* ssid = "m";               // Your WiFi SSID
-const char* password = "aaaaaaaa";    // Your WiFi Password
+const char* ssid = "m";
+const char* password = "wifi-password";
 
-// --- Backend Server URL ---
-const char* serverUrl = "https://trafficturbine.onrender.com/api/data";  // Your backend URL
+const char* serverUrl = "https://trafficturbine.onrender.com/api/data";
+const char* deviceId = "3";
 
-// --- Device ID ---
-const char* deviceId = "3";           // Set your device ID here
+Adafruit_INA219 ina219;
 
-// --- Sensor Pins ---
-#define VOLTAGE_PIN 34
-#define CURRENT_PIN 35
+const int ACS712_PIN = 34;
+const float ACS712_SENSITIVITY = 0.185;
+float acs712_zeroPoint;
 
-// --- Sampling Parameters ---
-const int SAMPLING_INTERVAL = 100;      // ms between readings
-const int SAMPLING_DURATION = 15000;    // 15 seconds total sampling time
+const int SAMPLING_INTERVAL = 100;
+const int SAMPLING_DURATION = 15000;
 const int SAMPLE_COUNT = SAMPLING_DURATION / SAMPLING_INTERVAL;
+
+void calibrateACS712();
+float readCurrent_ACS712();
+void connectToWiFi();
+void sendData(DynamicJsonDocument& doc);
 
 void setup() {
   Serial.begin(115200);
   delay(1000);
-  Serial.println("ESP32 Starting...");
+  Serial.println("--- ESP32 Combined Project Starting ---");
+
+  Serial.println("Initializing INA219 voltage sensor...");
+  if (!ina219.begin()) {
+    Serial.println("Failed to find INA219 chip! Halting execution.");
+    while (1) { delay(10); }
+  }
+  Serial.println("INA219 Initialized.");
+
+  Serial.println("Calibrating ACS712 current sensor...");
+  calibrateACS712();
 
   connectToWiFi();
 }
 
 void loop() {
-  Serial.println("\nStarting new measurement cycle...");
+  Serial.println("\n>>> Starting new measurement cycle...");
 
   float voltageSum = 0;
   float currentSum = 0;
 
-  // Take multiple samples over 15 seconds
+  Serial.printf("Sampling data for %d seconds...\n", SAMPLING_DURATION / 1000);
   for (int i = 0; i < SAMPLE_COUNT; i++) {
-    voltageSum += readVoltage();
-    currentSum += readCurrent();
+    voltageSum += ina219.getBusVoltage_V();
+    currentSum += readCurrent_ACS712();
     delay(SAMPLING_INTERVAL);
   }
 
-  // Calculate averages
   float avgVoltage = voltageSum / SAMPLE_COUNT;
   float avgCurrent = currentSum / SAMPLE_COUNT;
-  float avgPower = avgVoltage * avgCurrent;  // Watts
-  float energy = avgPower * (SAMPLING_DURATION / 1000.0);  // Joules (Watt-seconds)
+  float avgPower = avgVoltage * avgCurrent;
+  float energy = avgPower * (SAMPLING_DURATION / 1000.0);
 
-  // Simulated battery level (replace with actual sensor if available)
   int batteryLevel = 98;
 
-  // Print data to Serial Monitor
+  Serial.println("--- Cycle Averages ---");
   Serial.printf("Voltage: %.2f V\n", avgVoltage);
-  Serial.printf("Current: %.2f A\n", avgCurrent);
-  Serial.printf("Power: %.2f W\n", avgPower);
-  Serial.printf("Energy: %.3f J\n", energy);
-  Serial.printf("Battery Level: %d %%\n", batteryLevel);
+  Serial.printf("Current: %.3f A\n", avgCurrent);
+  Serial.printf("Power:   %.2f W\n", avgPower);
+  Serial.printf("Energy:  %.3f J\n", energy);
+  Serial.printf("Battery: %d %%\n", batteryLevel);
+  Serial.println("----------------------");
 
-  // Create JSON document (no time field, includes deviceId)
   DynamicJsonDocument doc(256);
   doc["voltage"] = avgVoltage;
   doc["current"] = avgCurrent;
@@ -71,17 +82,36 @@ void loop() {
 
   sendData(doc);
 
-  Serial.println("Data POST attempt complete. Waiting for next cycle...");
-  delay(5000);  // Wait 5 seconds before next cycle
+  Serial.println("Data POST attempt complete. Waiting 5 seconds for next cycle...");
+  delay(5000);
 }
 
-// --- WiFi Connection with Handshake Test ---
+void calibrateACS712() {
+  float sum = 0;
+  for (int i = 0; i < 100; i++) {
+    sum += analogRead(ACS712_PIN);
+    delay(10);
+  }
+
+  acs712_zeroPoint = (sum / 100) * 3.3 / 4095.0;
+  Serial.print("ACS712 Calibration Complete. Zero Point: ");
+  Serial.print(acs712_zeroPoint, 3);
+  Serial.println("V");
+}
+
+float readCurrent_ACS712() {
+  int raw = analogRead(ACS712_PIN);
+  float voltage = raw * 3.3 / 4095.0;
+  float current = (voltage - acs712_zeroPoint) / (ACS712_SENSITIVITY * (2.0 / 3.0));
+  return fabs(current);
+}
+
 void connectToWiFi() {
   Serial.printf("Connecting to WiFi SSID: %s\n", ssid);
   WiFi.begin(ssid, password);
 
   int retries = 0;
-  const int maxRetries = 40;  // ~20 seconds timeout
+  const int maxRetries = 40;
 
   while (WiFi.status() != WL_CONNECTED && retries < maxRetries) {
     delay(500);
@@ -99,7 +129,6 @@ void connectToWiFi() {
   }
 }
 
-// --- Send JSON Data to Backend with Debugging ---
 void sendData(DynamicJsonDocument& doc) {
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("WiFi not connected. Skipping HTTP POST.");
@@ -110,17 +139,16 @@ void sendData(DynamicJsonDocument& doc) {
   Serial.print("Connecting to backend at: ");
   Serial.println(serverUrl);
 
-  http.begin(serverUrl); // For HTTPS, this is fine for Render
-
+  http.begin(serverUrl);
   http.addHeader("Content-Type", "application/json");
 
-  String json;
-  serializeJson(doc, json);
+  String jsonPayload;
+  serializeJson(doc, jsonPayload);
 
   Serial.println("JSON Payload to be sent:");
-  Serial.println(json);
+  Serial.println(jsonPayload);
 
-  int httpCode = http.POST(json);
+  int httpCode = http.POST(jsonPayload);
 
   if (httpCode > 0) {
     Serial.printf("POST Response code: %d\n", httpCode);
@@ -134,34 +162,6 @@ void sendData(DynamicJsonDocument& doc) {
     }
   } else {
     Serial.printf("POST failed, error: %s\n", http.errorToString(httpCode).c_str());
-    if (httpCode == HTTPC_ERROR_CONNECTION_REFUSED) {
-      Serial.println("Connection refused by server. Check backend status and URL.");
-    } else if (httpCode == HTTPC_ERROR_SEND_HEADER_FAILED) {
-      Serial.println("Failed to send HTTP header.");
-    } else if (httpCode == HTTPC_ERROR_SEND_PAYLOAD_FAILED) {
-      Serial.println("Failed to send HTTP payload.");
-    } else if (httpCode == HTTPC_ERROR_NOT_CONNECTED) {
-      Serial.println("Not connected to server.");
-    } else if (httpCode == HTTPC_ERROR_CONNECTION_LOST) {
-      Serial.println("Connection lost during POST.");
-    }
   }
   http.end();
-}
-
-// --- Sensor Reading Functions ---
-
-float readVoltage() {
-  const float VOLTAGE_DIVIDER_RATIO = 5.0;  // Adjust for your hardwarea
-  int raw = analogRead(VOLTAGE_PIN);
-  float voltage = (raw / 4095.0) * 3.3;
-  return voltage * VOLTAGE_DIVIDER_RATIO;
-}
-
-float readCurrent() {
-  int raw = analogRead(CURRENT_PIN);
-  float voltage = (raw / 4095.0) * 3.3;
-  const float ZERO_CURRENT_VOLTAGE = 2.5;  // ACS712 zero current voltage
-  const float SENSITIVITY = 0.185;          // ACS712 sensitivity (V/A)
-  return (voltage - ZERO_CURRENT_VOLTAGE) / SENSITIVITY;
 }
