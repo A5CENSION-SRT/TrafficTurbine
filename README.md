@@ -42,7 +42,7 @@ TrafficTurbine/
 - **Render** - Backend hosting platform
 
 ### Frontend
-- **React** - UI library
+- **Next.js** - Framework
 - **ShadCN/UI** - Modern UI component library with Tailwind CSS
 - **Tabler Icons** - Icon library
 - **Custom UI Components** - Sidebar and navigation
